@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+  <meta name="theme-color" content="#0a0a0f">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Рулетка напитков</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<main id="app">
+
+  <!-- ОНБОРДИНГ -->
+  <section id="onboard" class="screen" hidden>
+    <div class="hero">
+      <div class="hero-emoji">🍹</div>
+      <h1 class="hero-title">Рулетка<br>напитков</h1>
+      <p class="hero-sub">Что выпьем сегодня?</p>
+    </div>
+    <div class="choice-grid">
+      <button class="choice" data-mode="alcohol">
+        <div class="choice-emoji">🍺</div>
+        <div class="choice-title">С алкоголем</div>
+        <div class="choice-sub">Классика</div>
+      </button>
+      <button class="choice" data-mode="non-alcohol">
+        <div class="choice-emoji">🥤</div>
+        <div class="choice-title">Безалкогольное</div>
+        <div class="choice-sub">Без градуса</div>
+      </button>
+      <button class="choice wide" data-mode="both">
+        <div class="choice-emoji">🎲</div>
+        <div class="choice-title">Всё подряд</div>
+        <div class="choice-sub">Пусть решит судьба</div>
+      </button>
+    </div>
+    <p class="disclaimer">18+ · Пейте ответственно</p>
+  </section>
+
+  <!-- ГЛАВНЫЙ -->
+  <section id="main" class="screen screen-main" hidden>
+    <header class="app-header">
+      <div class="app-logo">
+        <svg class="logo-svg" viewBox="0 0 48 48" aria-hidden="true">
+          <defs>
+            <linearGradient id="lgGrad" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="#f0c419"/>
+              <stop offset="100%" stop-color="#ff8a00"/>
+            </linearGradient>
+            <linearGradient id="lgLiquid" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#ff8a00" stop-opacity=".95"/>
+              <stop offset="100%" stop-color="#f0c419" stop-opacity=".95"/>
+            </linearGradient>
+            <radialGradient id="lgGlow" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stop-color="#f0c419" stop-opacity=".55"/>
+              <stop offset="100%" stop-color="#f0c419" stop-opacity="0"/>
+            </radialGradient>
+          </defs>
+          <circle class="logo-glow" cx="24" cy="24" r="22" fill="url(#lgGlow)"/>
+          <path class="logo-glass"
+                d="M14 8 L34 8 L31 26 Q24 32 17 26 Z"
+                fill="none" stroke="url(#lgGrad)" stroke-width="2.2"
+                stroke-linejoin="round" stroke-linecap="round"/>
+          <path class="logo-liquid"
+                d="M16.5 16 L31.5 16 L30 25 Q24 29.5 18 25 Z"
+                fill="url(#lgLiquid)"/>
+          <path class="logo-stem" d="M24 27 L24 38" stroke="url(#lgGrad)" stroke-width="2.2" stroke-linecap="round"/>
+          <path class="logo-base" d="M17 40 L31 40" stroke="url(#lgGrad)" stroke-width="2.2" stroke-linecap="round"/>
+          <circle class="logo-bubble b1" cx="22" cy="22" r="1.4" fill="#fff" opacity=".9"/>
+          <circle class="logo-bubble b2" cx="26" cy="20" r="1.1" fill="#fff" opacity=".85"/>
+          <circle class="logo-bubble b3" cx="24" cy="18" r="0.9" fill="#fff" opacity=".8"/>
+          <circle class="logo-bubble b4" cx="28" cy="23" r="0.8" fill="#fff" opacity=".7"/>
+        </svg>
+        <span class="app-logo-text">Рулетка<br>напитков</span>
+      </div>
+      <button id="open-settings" class="icon-btn" aria-label="Настройки">⚙️</button>
+    </header>
+
+    <div class="seg small" id="wheel-mode">
+      <button data-wm="all" class="seg-btn active">Сразу всё</button>
+      <button data-wm="category" class="seg-btn">Категория → напиток</button>
+    </div>
+
+    <div class="wheel-wrap">
+      <div class="wheel-title" id="wheel-title">
+        <span class="wt-line"></span>
+        <span class="wt-text" id="wt-text">Крути и узнай</span>
+        <span class="wt-line"></span>
+      </div>
+
+      <div class="reel-stage" id="reel-stage">
+        <div class="reel-window">
+          <div class="reel-strip" id="reel-0"></div>
+          <div class="reel-strip" id="reel-1"></div>
+          <div class="reel-strip" id="reel-2"></div>
+        </div>
+        <div class="reel-marker"></div>
+        <div class="reel-shade reel-shade-top"></div>
+        <div class="reel-shade reel-shade-bottom"></div>
+        <div class="reel-banner" id="reel-banner" hidden></div>
+      </div>
+
+      <button id="spin-btn" class="spin-btn-big">
+        <span class="spin-btn-glow"></span>
+        <span class="spin-btn-text">КРУТИТЬ</span>
+      </button>
+
+      <button id="repeat-btn" class="chip repeat" hidden>↻ Повторить последний</button>
+    </div>
+
+    <div class="quick-actions">
+      <button id="open-filters" class="qa-tile">
+        <span class="qa-icon">🎚</span>
+        <span class="qa-label">Фильтры</span>
+        <span class="qa-dot" id="filters-dot" hidden></span>
+      </button>
+      <button id="open-themes" class="qa-tile">
+        <span class="qa-icon">🎄</span>
+        <span class="qa-label">Темы</span>
+      </button>
+      <button id="open-search" class="qa-tile">
+        <span class="qa-icon">🔍</span>
+        <span class="qa-label">Поиск</span>
+      </button>
+      <button id="open-bar" class="qa-tile">
+        <span class="qa-icon">🍾</span>
+        <span class="qa-label">Бар</span>
+      </button>
+    </div>
+  </section>
+
+  <!-- БАР -->
+  <section id="bar-screen" class="screen" hidden>
+    <header class="app-header">
+      <h2 class="page-title">Свой бар</h2>
+    </header>
+
+    <div class="add-form">
+      <input id="cn" class="search-input" placeholder="Название (напр. Домашний ликёр)">
+      <div class="add-row">
+        <input id="ce" class="search-input emoji-input" placeholder="🍹" maxlength="4">
+        <select id="cc" class="search-input"></select>
+        <input id="ca" class="search-input" type="number" min="0" max="80" placeholder="%">
+      </div>
+      <button id="add-custom-btn" class="btn primary full">+ Добавить в бар</button>
+    </div>
+
+    <label class="switch-row">
+      <span>Только мой бар</span>
+      <input type="checkbox" id="bar-only-toggle" class="switch">
+    </label>
+
+    <div class="bar-search-wrap">
+      <input id="bar-search" class="search-input bar-search" placeholder="Найти напиток в баре…">
+      <button id="bar-search-clear" class="bar-search-clear" hidden>✕</button>
+    </div>
+
+    <div id="bar-list" class="bar-list"></div>
+  </section>
+
+  <!-- КОЛЛЕКЦИЯ -->
+  <section id="collection-screen" class="screen" hidden>
+    <header class="app-header">
+      <h2 class="page-title">Коллекция</h2>
+    </header>
+    <div class="stats-grid" id="stats-grid"></div>
+    <div class="progress-ring-wrap">
+      <svg class="progress-ring" viewBox="0 0 120 120">
+        <defs>
+          <linearGradient id="ringGrad" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#f0c419"/>
+            <stop offset="100%" stop-color="#ff8a00"/>
+          </linearGradient>
+        </defs>
+        <circle cx="60" cy="60" r="52" class="ring-bg"/>
+        <circle cx="60" cy="60" r="52" class="ring-fg" id="ring-fg" stroke="url(#ringGrad)"/>
+      </svg>
+      <div class="ring-label">
+        <div id="ring-count">0</div>
+        <div class="muted small">из <span id="ring-total">0</span></div>
+      </div>
+    </div>
+    <h3 class="section-title">Ачивки</h3>
+    <div class="ach-grid" id="ach-grid"></div>
+    <h3 class="section-title">Открытые напитки</h3>
+    <div id="opened-list" class="list"></div>
+  </section>
+
+  <!-- ПРОФИЛЬ -->
+  <section id="profile-screen" class="screen" hidden>
+    <header class="app-header">
+      <h2 class="page-title">Профиль</h2>
+    </header>
+
+    <div class="profile-hero" id="profile-hero">
+      <div class="hero-avatar" id="hero-avatar">🍹</div>
+      <div class="hero-info">
+        <div class="hero-title" id="hero-title">Новичок</div>
+        <div class="hero-sub" id="hero-sub">Крути колесо, чтобы прокачаться</div>
+      </div>
+      <div class="hero-level" id="hero-level">1</div>
+    </div>
+
+    <div class="level-progress" id="level-progress">
+      <div class="level-bar"><div class="level-fill" id="level-fill"></div></div>
+      <div class="level-text" id="level-text">0 / 10</div>
+    </div>
+
+    <div class="profile-stats">
+      <div class="stat-card"><div class="stat-num" id="p-total">0</div><div class="stat-label">спинов</div></div>
+      <div class="stat-card"><div class="stat-num" id="p-today">0</div><div class="stat-label">сегодня</div></div>
+      <div class="stat-card"><div class="stat-num" id="p-opened">0</div><div class="stat-label">открыто</div></div>
+    </div>
+
+    <div class="top-cat" id="top-cat" hidden>
+      <div class="top-cat-emoji" id="top-cat-emoji">🍺</div>
+      <div class="top-cat-info">
+        <div class="top-cat-title">Любимая категория</div>
+        <div class="top-cat-name" id="top-cat-name">—</div>
+      </div>
+      <div class="top-cat-count" id="top-cat-count">0</div>
+    </div>
+
+    <h3 class="section-title">По категориям</h3>
+    <div class="cat-progress" id="cat-progress"></div>
+
+    <h3 class="section-title">История</h3>
+    <div id="history-list" class="list"></div>
+  </section>
+
+  <!-- НИЖНЯЯ НАВИГАЦИЯ -->
+  <nav id="tabbar" hidden>
+    <button data-tab="main" class="tab active">🎡<span>Рулетка</span></button>
+    <button data-tab="bar-screen" class="tab">🍾<span>Бар</span></button>
+    <button data-tab="collection-screen" class="tab">🏆<span>Коллекция</span></button>
+    <button data-tab="profile-screen" class="tab">👤<span>Профиль</span></button>
+  </nav>
+
+  <!-- РЕЗУЛЬТАТ (ВЫИГРАЛ) -->
+  <div id="result" class="modal" hidden>
+    <div class="modal-card result-card">
+      <div id="result-emoji" class="result-emoji"></div>
+      <h2 id="result-name" class="result-name"></h2>
+      <p id="result-info" class="muted"></p>
+      <div id="result-extra" class="extra"></div>
+      <div class="row">
+        <button id="again-btn" class="btn">Крутить ещё</button>
+        <button id="accept-btn" class="btn primary">Принять</button>
+      </div>
+      <button id="share-btn" class="link">Поделиться</button>
+    </div>
+  </div>
+
+  <!-- ОБЩАЯ МОДАЛКА -->
+  <div id="modal" class="modal" hidden>
+    <div class="modal-card">
+      <button id="modal-close" class="icon-btn close" aria-label="Закрыть">✕</button>
+      <div id="modal-body"></div>
+    </div>
+  </div>
+
+  <!-- НАСТРОЙКИ -->
+  <div id="settings" class="modal" hidden>
+    <div class="modal-card">
+      <button id="settings-close" class="icon-btn close" aria-label="Закрыть">✕</button>
+      <h3>Настройки</h3>
+      <button id="settings-change-mode" class="btn full">🎛 Сменить режим питья</button>
+      <label class="switch-row"><span>Звук тиканья</span><input type="checkbox" id="set-tick" class="switch"></label>
+      <label class="switch-row"><span>Звук результата</span><input type="checkbox" id="set-result-sound" class="switch"></label>
+      <label class="switch-row"><span>Вибрация</span><input type="checkbox" id="set-vibrate" class="switch"></label>
+      <label class="switch-row"><span>Только лёгкое (≤6%)</span><input type="checkbox" id="set-only-light" class="switch"></label>
+      <label class="field">Макс. крепость: <input type="range" id="set-max-abv" min="0" max="60" step="1"><span id="set-max-abv-val"></span></label>
+      <label class="field">Напомнить про воду после: <input type="number" id="set-water" min="0" max="20" step="1"></label>
+      <button id="reset-data" class="btn danger full">Сбросить все данные</button>
+      <p class="muted small center">Версия 8.0 · 18+ · Пейте ответственно</p>
+    </div>
+  </div>
+
+  <div id="toast" class="toast" hidden></div>
+  <div id="confetti" class="confetti" hidden></div>
+</main>
+<script src="drinks.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
