@@ -7,32 +7,152 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>Рулетка напитков</title>
+  <link rel="manifest" href="manifest.json">
   <link rel="stylesheet" href="style.css">
+  <style>
+    /* ===== SVG-ИКОНКИ ===== */
+    .svg-icon {
+      display: inline-block;
+      vertical-align: -0.15em;
+      flex-shrink: 0;
+    }
+    .svg-emoji {
+      display: inline-flex;
+      align-items: center;
+      vertical-align: -0.15em;
+      line-height: 1;
+    }
+    .svg-emoji .svg-icon,
+    .svg-emoji .svg-icon use {
+      display: block;
+    }
+    /* Крупные эмодзи в заголовках/карточках */
+    .hero-emoji [data-icon],
+    .choice-emoji [data-icon],
+    .duo-mascot [data-icon] {
+      display: inline-block;
+    }
+  </style>
 </head>
 <body>
+
+<!-- АТМОСФЕРА -->
+<canvas id="bubble-canvas"></canvas>
+<!-- ЛЕТАЮЩИЙ СТАКАН v12 -->
+<div id="flying-mug" class="mug-state-idle" aria-hidden="true">
+  <svg viewBox="0 0 80 80" class="mug-svg" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="mugGlassGrad" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stop-color="rgba(255,255,255,.7)"/>
+        <stop offset="50%" stop-color="rgba(255,255,255,.25)"/>
+        <stop offset="100%" stop-color="rgba(255,255,255,.08)"/>
+      </linearGradient>
+      <linearGradient id="mugBeerGrad" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#ffd54f"/>
+        <stop offset="40%" stop-color="#ffb300"/>
+        <stop offset="100%" stop-color="#e65100"/>
+      </linearGradient>
+      <linearGradient id="mugFoamGrad" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#ffffff"/>
+        <stop offset="100%" stop-color="#fff3c4"/>
+      </linearGradient>
+      <radialGradient id="mugBubbleGrad" cx="50%" cy="50%" r="50%">
+        <stop offset="0%" stop-color="rgba(255,255,255,.95)"/>
+        <stop offset="100%" stop-color="rgba(255,255,255,0)"/>
+      </radialGradient>
+      <filter id="mugShadow" x="-50%" y="-50%" width="200%" height="200%">
+        <feGaussianBlur in="SourceAlpha" stdDeviation="2"/>
+        <feOffset dx="0" dy="3" result="offsetblur"/>
+        <feComponentTransfer><feFuncA type="linear" slope=".5"/></feComponentTransfer>
+        <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
+      </filter>
+    </defs>
+
+    <ellipse class="mug-shadow" cx="40" cy="72" rx="20" ry="3.5" fill="rgba(0,0,0,.35)"/>
+
+    <g class="mug-handle">
+      <path d="M56 30 Q72 30 72 42 Q72 54 56 54"
+            fill="none" stroke="url(#mugGlassGrad)"
+            stroke-width="5" stroke-linecap="round"/>
+      <path d="M56 30 Q72 30 72 42 Q72 54 56 54"
+            fill="none" stroke="rgba(255,255,255,.35)"
+            stroke-width="2" stroke-linecap="round"/>
+    </g>
+
+    <g class="mug-body" filter="url(#mugShadow)">
+      <rect x="12" y="18" width="48" height="52" rx="7"
+            fill="url(#mugGlassGrad)"
+            stroke="rgba(255,255,255,.65)" stroke-width="1.8"/>
+      <rect class="mug-beer" x="14" y="34" width="44" height="34" rx="5" fill="url(#mugBeerGrad)"/>
+      <rect x="17" y="38" width="3.5" height="24" rx="1.75" fill="rgba(255,255,255,.55)"/>
+      <rect x="23" y="42" width="1.5" height="14" rx=".75" fill="rgba(255,255,255,.3)"/>
+
+      <g class="mug-bubbles">
+        <circle class="mug-bubble b1" cx="28" cy="60" r="2.2" fill="url(#mugBubbleGrad)"/>
+        <circle class="mug-bubble b2" cx="38" cy="58" r="1.6" fill="url(#mugBubbleGrad)"/>
+        <circle class="mug-bubble b3" cx="48" cy="62" r="1.9" fill="url(#mugBubbleGrad)"/>
+        <circle class="mug-bubble b4" cx="33" cy="55" r="1.2" fill="url(#mugBubbleGrad)"/>
+        <circle class="mug-bubble b5" cx="44" cy="52" r="1.4" fill="url(#mugBubbleGrad)"/>
+      </g>
+
+      <g class="mug-foam">
+        <path d="M14 34
+                 Q16 26 22 30
+                 Q26 22 32 30
+                 Q38 22 44 30
+                 Q50 26 58 32
+                 L58 36 L14 36 Z"
+              fill="url(#mugFoamGrad)"/>
+        <circle cx="20" cy="30" r="3" fill="#fff"/>
+        <circle cx="30" cy="26" r="3.5" fill="#fff"/>
+        <circle cx="40" cy="27" r="3" fill="#fff"/>
+        <circle cx="50" cy="30" r="2.8" fill="#fff"/>
+      </g>
+    </g>
+
+    <g class="mug-face">
+      <g class="mug-eye mug-eye-l">
+        <ellipse cx="28" cy="46" rx="3.5" ry="4" fill="#1a1a22"/>
+        <ellipse class="mug-pupil" cx="28" cy="47" rx="1.6" ry="1.9" fill="#fff"/>
+      </g>
+      <g class="mug-eye mug-eye-r">
+        <ellipse cx="44" cy="46" rx="3.5" ry="4" fill="#1a1a22"/>
+        <ellipse class="mug-pupil" cx="44" cy="47" rx="1.6" ry="1.9" fill="#fff"/>
+      </g>
+      <g class="mug-mouth">
+        <path class="mug-mouth-idle"    d="M34 54 Q36 57 40 57" fill="none" stroke="#1a1a22" stroke-width="1.8" stroke-linecap="round"/>
+        <path class="mug-mouth-sleepy"  d="M34 56 Q36 55 40 55" fill="none" stroke="#1a1a22" stroke-width="1.8" stroke-linecap="round"/>
+        <path class="mug-mouth-excited" d="M31 51 Q36 62 41 51 Z" fill="#1a1a22"/>
+        <path class="mug-mouth-celebrate" d="M30 50 Q36 64 42 50 Z" fill="#1a1a22"/>
+      </g>
+    </g>
+  </svg>
+
+  <div class="mug-trail" id="mug-trail"></div>
+</div>
 
 <main id="app">
 
   <!-- ОНБОРДИНГ -->
   <section id="onboard" class="screen" hidden>
     <div class="hero">
-      <div class="hero-emoji">🍹</div>
+      <div class="hero-emoji" data-icon="cocktail" data-icon-size="72"></div>
       <h1 class="hero-title">Рулетка<br>напитков</h1>
       <p class="hero-sub">Что выпьем сегодня?</p>
     </div>
     <div class="choice-grid">
       <button class="choice" data-mode="alcohol">
-        <div class="choice-emoji">🍺</div>
+        <div class="choice-emoji" data-icon="beer" data-icon-size="48"></div>
         <div class="choice-title">С алкоголем</div>
         <div class="choice-sub">Классика</div>
       </button>
       <button class="choice" data-mode="non-alcohol">
-        <div class="choice-emoji">🥤</div>
+        <div class="choice-emoji" data-icon="soda" data-icon-size="48"></div>
         <div class="choice-title">Безалкогольное</div>
         <div class="choice-sub">Без градуса</div>
       </button>
       <button class="choice wide" data-mode="both">
-        <div class="choice-emoji">🎲</div>
+        <div class="choice-emoji" data-icon="dice" data-icon-size="48"></div>
         <div class="choice-title">Всё подряд</div>
         <div class="choice-sub">Пусть решит судьба</div>
       </button>
@@ -42,46 +162,75 @@
 
   <!-- ГЛАВНЫЙ -->
   <section id="main" class="screen screen-main" hidden>
-    <header class="app-header">
-      <div class="app-logo">
-        <svg class="logo-svg" viewBox="0 0 48 48" aria-hidden="true">
-          <defs>
-            <linearGradient id="lgGrad" x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0%" stop-color="#f0c419"/>
-              <stop offset="100%" stop-color="#ff8a00"/>
-            </linearGradient>
-            <linearGradient id="lgLiquid" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stop-color="#ff8a00" stop-opacity=".95"/>
-              <stop offset="100%" stop-color="#f0c419" stop-opacity=".95"/>
-            </linearGradient>
-            <radialGradient id="lgGlow" cx="50%" cy="50%" r="50%">
-              <stop offset="0%" stop-color="#f0c419" stop-opacity=".55"/>
-              <stop offset="100%" stop-color="#f0c419" stop-opacity="0"/>
-            </radialGradient>
-          </defs>
-          <circle class="logo-glow" cx="24" cy="24" r="22" fill="url(#lgGlow)"/>
-          <path class="logo-glass"
-                d="M14 8 L34 8 L31 26 Q24 32 17 26 Z"
-                fill="none" stroke="url(#lgGrad)" stroke-width="2.2"
-                stroke-linejoin="round" stroke-linecap="round"/>
-          <path class="logo-liquid"
-                d="M16.5 16 L31.5 16 L30 25 Q24 29.5 18 25 Z"
-                fill="url(#lgLiquid)"/>
-          <path class="logo-stem" d="M24 27 L24 38" stroke="url(#lgGrad)" stroke-width="2.2" stroke-linecap="round"/>
-          <path class="logo-base" d="M17 40 L31 40" stroke="url(#lgGrad)" stroke-width="2.2" stroke-linecap="round"/>
-          <circle class="logo-bubble b1" cx="22" cy="22" r="1.4" fill="#fff" opacity=".9"/>
-          <circle class="logo-bubble b2" cx="26" cy="20" r="1.1" fill="#fff" opacity=".85"/>
-          <circle class="logo-bubble b3" cx="24" cy="18" r="0.9" fill="#fff" opacity=".8"/>
-          <circle class="logo-bubble b4" cx="28" cy="23" r="0.8" fill="#fff" opacity=".7"/>
-        </svg>
-        <span class="app-logo-text">Рулетка<br>напитков</span>
+
+    <header class="duo-header">
+      <div class="duo-top">
+        <div class="duo-logo">
+          <div class="duo-mascot" data-icon="cocktail" data-icon-size="32"></div>
+          <div class="duo-title-wrap">
+            <div class="duo-title">Рулетка напитков</div>
+            <div class="duo-subtitle" id="duo-subtitle">Уровень 1 · Новичок</div>
+          </div>
+        </div>
+        <div class="duo-actions">
+          <button id="theme-toggle" class="duo-icon-btn" aria-label="Тема" data-icon="moon" data-icon-size="22"></button>
+          <button id="open-settings" class="duo-icon-btn" aria-label="Настройки" data-icon="settings" data-icon-size="22"></button>
+        </div>
       </div>
-      <button id="open-settings" class="icon-btn" aria-label="Настройки">⚙️</button>
+      <div class="duo-stats-row">
+        <div class="duo-stat">
+          <span class="duo-stat-icon" data-icon="fire" data-icon-size="18"></span>
+          <span class="duo-stat-value" id="duo-streak">0</span>
+        </div>
+        <div class="duo-stat">
+          <span class="duo-stat-icon" data-icon="bolt" data-icon-size="18"></span>
+          <span class="duo-stat-value" id="duo-rerolls">3</span>
+        </div>
+        <div class="duo-stat">
+          <span class="duo-stat-icon" data-icon="target" data-icon-size="18"></span>
+          <span class="duo-stat-value" id="duo-spins">0</span>
+        </div>
+        <div class="duo-stat wide">
+          <div class="duo-xp-bar">
+            <div class="duo-xp-fill" id="duo-xp-fill"></div>
+          </div>
+        </div>
+      </div>
     </header>
 
-    <div class="seg small" id="wheel-mode">
-      <button data-wm="all" class="seg-btn active">Сразу всё</button>
-      <button data-wm="category" class="seg-btn">Категория → напиток</button>
+    <div id="daily-banner" class="daily-banner" hidden>
+      <div class="daily-icon" data-icon="gift" data-icon-size="28"></div>
+      <div class="daily-info">
+        <div class="daily-title" id="daily-title">Бонус дня</div>
+        <div class="daily-sub" id="daily-sub">Забери награду</div>
+      </div>
+      <button id="daily-claim" class="duo-btn green small-btn" hidden>Забрать</button>
+    </div>
+
+    <div id="quest-banner" class="quest-banner" hidden>
+      <div class="quest-icon" data-icon="target" data-icon-size="24"></div>
+      <div class="quest-info">
+        <div class="quest-title" id="quest-title">Квест дня</div>
+        <div class="quest-sub" id="quest-sub">—</div>
+      </div>
+      <div class="quest-progress" id="quest-progress">0/1</div>
+    </div>
+
+    <div class="duo-seg" id="wheel-mode">
+      <button data-wm="all" class="duo-seg-btn active">Сразу всё</button>
+      <button data-wm="category" class="duo-seg-btn">Категория → напиток</button>
+    </div>
+
+    <div class="duo-seg three" id="view-mode">
+      <button data-vm="reels" class="duo-seg-btn active">
+        <span data-icon="slots" data-icon-size="18"></span> Слоты
+      </button>
+      <button data-vm="wheel" class="duo-seg-btn">
+        <span data-icon="wheel" data-icon-size="18"></span> Колесо
+      </button>
+      <button data-vm="carousel" class="duo-seg-btn">
+        <span data-icon="carousel" data-icon-size="18"></span> Карусель
+      </button>
     </div>
 
     <div class="wheel-wrap">
@@ -91,7 +240,7 @@
         <span class="wt-line"></span>
       </div>
 
-      <div class="reel-stage" id="reel-stage">
+      <div class="view-panel" id="reel-stage">
         <div class="reel-window">
           <div class="reel-strip" id="reel-0"></div>
           <div class="reel-strip" id="reel-1"></div>
@@ -103,30 +252,45 @@
         <div class="reel-banner" id="reel-banner" hidden></div>
       </div>
 
-      <button id="spin-btn" class="spin-btn-big">
-        <span class="spin-btn-glow"></span>
+      <div class="view-panel" id="fortune-stage" hidden>
+        <canvas id="fortune-canvas" width="360" height="360"></canvas>
+        <div class="fortune-pointer"></div>
+        <div class="fortune-center" data-icon="cocktail" data-icon-size="36"></div>
+      </div>
+
+      <div class="view-panel" id="carousel-stage" hidden>
+        <div class="carousel-track" id="carousel-track"></div>
+        <div class="carousel-arrow carousel-arrow-top"></div>
+        <div class="carousel-arrow carousel-arrow-bottom"></div>
+        <div class="carousel-banner" id="carousel-banner" hidden></div>
+      </div>
+
+      <button id="spin-btn" class="duo-btn spin-btn-big">
         <span class="spin-btn-text">КРУТИТЬ</span>
       </button>
 
-      <button id="repeat-btn" class="chip repeat" hidden>↻ Повторить последний</button>
+      <div class="spin-extras">
+        <button id="repeat-btn" class="duo-chip repeat" hidden>
+          <span data-icon="repeat" data-icon-size="16"></span> Повторить
+        </button>
+        <button id="reroll-btn" class="duo-chip reroll">
+          <span data-icon="dice" data-icon-size="16"></span> Реролл <span id="reroll-count">3</span>
+        </button>
+      </div>
     </div>
 
     <div class="quick-actions">
-      <button id="open-filters" class="qa-tile">
-        <span class="qa-icon">🎚</span>
+      <button id="open-filters" class="duo-tile">
+        <span class="qa-icon" data-icon="filters" data-icon-size="28"></span>
         <span class="qa-label">Фильтры</span>
         <span class="qa-dot" id="filters-dot" hidden></span>
       </button>
-      <button id="open-themes" class="qa-tile">
-        <span class="qa-icon">🎄</span>
+      <button id="open-themes" class="duo-tile">
+        <span class="qa-icon" data-icon="tree" data-icon-size="28"></span>
         <span class="qa-label">Темы</span>
       </button>
-      <button id="open-search" class="qa-tile">
-        <span class="qa-icon">🔍</span>
-        <span class="qa-label">Поиск</span>
-      </button>
-      <button id="open-bar" class="qa-tile">
-        <span class="qa-icon">🍾</span>
+      <button id="open-bar" class="duo-tile">
+        <span class="qa-icon" data-icon="bar" data-icon-size="28"></span>
         <span class="qa-label">Бар</span>
       </button>
     </div>
@@ -134,45 +298,54 @@
 
   <!-- БАР -->
   <section id="bar-screen" class="screen" hidden>
-    <header class="app-header">
-      <h2 class="page-title">Свой бар</h2>
+    <header class="duo-page-header">
+      <h2 class="duo-page-title">
+        <span data-icon="bar" data-icon-size="24"></span> Свой бар
+      </h2>
     </header>
-
     <div class="add-form">
-      <input id="cn" class="search-input" placeholder="Название (напр. Домашний ликёр)">
+      <input id="cn" class="duo-input" placeholder="Название (напр. Домашний ликёр)">
       <div class="add-row">
-        <input id="ce" class="search-input emoji-input" placeholder="🍹" maxlength="4">
-        <select id="cc" class="search-input"></select>
-        <input id="ca" class="search-input" type="number" min="0" max="80" placeholder="%">
+        <input id="ce" class="duo-input emoji-input" placeholder="🍹" maxlength="4">
+        <select id="cc" class="duo-input"></select>
+        <input id="ca" class="duo-input" type="number" min="0" max="80" placeholder="%">
       </div>
-      <button id="add-custom-btn" class="btn primary full">+ Добавить в бар</button>
+      <button id="add-custom-btn" class="duo-btn green full">+ Добавить в бар</button>
     </div>
-
-    <label class="switch-row">
+    <label class="duo-switch-row">
       <span>Только мой бар</span>
-      <input type="checkbox" id="bar-only-toggle" class="switch">
+      <input type="checkbox" id="bar-only-toggle" class="duo-switch">
     </label>
-
-    <div class="bar-search-wrap">
-      <input id="bar-search" class="search-input bar-search" placeholder="Найти напиток в баре…">
-      <button id="bar-search-clear" class="bar-search-clear" hidden>✕</button>
+    <div class="duo-search-wrap">
+      <input id="bar-search" class="duo-input duo-search" placeholder="Найти напиток в баре…">
+      <button id="bar-search-clear" class="duo-search-clear" hidden data-icon="close" data-icon-size="16"></button>
     </div>
-
     <div id="bar-list" class="bar-list"></div>
   </section>
 
   <!-- КОЛЛЕКЦИЯ -->
   <section id="collection-screen" class="screen" hidden>
-    <header class="app-header">
-      <h2 class="page-title">Коллекция</h2>
+    <header class="duo-page-header">
+      <h2 class="duo-page-title">
+        <span data-icon="trophy" data-icon-size="24"></span> Коллекция
+      </h2>
     </header>
+    <div class="duo-search-wrap" style="max-width:440px">
+      <input id="col-search" class="duo-input duo-search" placeholder="Найти напиток…">
+      <button id="col-search-clear" class="duo-search-clear" hidden data-icon="close" data-icon-size="16"></button>
+    </div>
+    <div class="duo-seg three" id="col-filter" style="max-width:440px">
+      <button data-cf="opened" class="duo-seg-btn active">Открытые</button>
+      <button data-cf="locked" class="duo-seg-btn">Закрытые</button>
+      <button data-cf="all" class="duo-seg-btn">Все</button>
+    </div>
     <div class="stats-grid" id="stats-grid"></div>
     <div class="progress-ring-wrap">
       <svg class="progress-ring" viewBox="0 0 120 120">
         <defs>
           <linearGradient id="ringGrad" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stop-color="#f0c419"/>
-            <stop offset="100%" stop-color="#ff8a00"/>
+            <stop offset="0%" stop-color="#58cc02"/>
+            <stop offset="100%" stop-color="#89e219"/>
           </linearGradient>
         </defs>
         <circle cx="60" cy="60" r="52" class="ring-bg"/>
@@ -185,61 +358,85 @@
     </div>
     <h3 class="section-title">Ачивки</h3>
     <div class="ach-grid" id="ach-grid"></div>
-    <h3 class="section-title">Открытые напитки</h3>
-    <div id="opened-list" class="list"></div>
+    <h3 class="section-title" id="opened-title">Напитки</h3>
+    <div id="col-list" class="bar-list"></div>
   </section>
 
   <!-- ПРОФИЛЬ -->
   <section id="profile-screen" class="screen" hidden>
-    <header class="app-header">
-      <h2 class="page-title">Профиль</h2>
+    <header class="duo-page-header">
+      <h2 class="duo-page-title">
+        <span data-icon="profile" data-icon-size="24"></span> Профиль
+      </h2>
     </header>
-
     <div class="profile-hero" id="profile-hero">
-      <div class="hero-avatar" id="hero-avatar">🍹</div>
+      <div class="hero-avatar" id="hero-avatar" data-icon="cocktail" data-icon-size="40"></div>
       <div class="hero-info">
         <div class="hero-title" id="hero-title">Новичок</div>
         <div class="hero-sub" id="hero-sub">Крути колесо, чтобы прокачаться</div>
       </div>
       <div class="hero-level" id="hero-level">1</div>
     </div>
-
     <div class="level-progress" id="level-progress">
       <div class="level-bar"><div class="level-fill" id="level-fill"></div></div>
       <div class="level-text" id="level-text">0 / 10</div>
     </div>
-
     <div class="profile-stats">
       <div class="stat-card"><div class="stat-num" id="p-total">0</div><div class="stat-label">спинов</div></div>
       <div class="stat-card"><div class="stat-num" id="p-today">0</div><div class="stat-label">сегодня</div></div>
       <div class="stat-card"><div class="stat-num" id="p-opened">0</div><div class="stat-label">открыто</div></div>
     </div>
-
+    <div class="streak-card" id="streak-card" hidden>
+      <div class="streak-fire" data-icon="fire" data-icon-size="28"></div>
+      <div class="streak-info">
+        <div class="streak-title">Стрик</div>
+        <div class="streak-sub" id="streak-sub">0 дней подряд</div>
+      </div>
+      <div class="streak-num" id="streak-num">0</div>
+    </div>
     <div class="top-cat" id="top-cat" hidden>
-      <div class="top-cat-emoji" id="top-cat-emoji">🍺</div>
+      <div class="top-cat-emoji" id="top-cat-emoji" data-icon="beer" data-icon-size="32"></div>
       <div class="top-cat-info">
         <div class="top-cat-title">Любимая категория</div>
         <div class="top-cat-name" id="top-cat-name">—</div>
       </div>
       <div class="top-cat-count" id="top-cat-count">0</div>
     </div>
-
     <h3 class="section-title">По категориям</h3>
     <div class="cat-progress" id="cat-progress"></div>
-
     <h3 class="section-title">История</h3>
+    <div class="duo-search-wrap" style="max-width:440px;margin-bottom:8px">
+      <input id="hist-search" class="duo-input duo-search" placeholder="Найти в истории…">
+    </div>
     <div id="history-list" class="list"></div>
+    <div class="data-actions">
+      <button id="export-btn" class="duo-btn">
+        <span data-icon="export" data-icon-size="18"></span> Экспорт
+      </button>
+      <button id="import-btn" class="duo-btn">
+        <span data-icon="import" data-icon-size="18"></span> Импорт
+      </button>
+      <input id="import-file" type="file" accept="application/json" hidden>
+    </div>
   </section>
 
-  <!-- НИЖНЯЯ НАВИГАЦИЯ -->
+  <!-- ТАББАР -->
   <nav id="tabbar" hidden>
-    <button data-tab="main" class="tab active">🎡<span>Рулетка</span></button>
-    <button data-tab="bar-screen" class="tab">🍾<span>Бар</span></button>
-    <button data-tab="collection-screen" class="tab">🏆<span>Коллекция</span></button>
-    <button data-tab="profile-screen" class="tab">👤<span>Профиль</span></button>
+    <button data-tab="main" class="tab active">
+      <span data-icon="roulette" data-icon-size="22"></span><span>Рулетка</span>
+    </button>
+    <button data-tab="bar-screen" class="tab">
+      <span data-icon="bar" data-icon-size="22"></span><span>Бар</span>
+    </button>
+    <button data-tab="collection-screen" class="tab">
+      <span data-icon="trophy" data-icon-size="22"></span><span>Коллекция</span>
+    </button>
+    <button data-tab="profile-screen" class="tab">
+      <span data-icon="profile" data-icon-size="22"></span><span>Профиль</span>
+    </button>
   </nav>
 
-  <!-- РЕЗУЛЬТАТ (ВЫИГРАЛ) -->
+  <!-- РЕЗУЛЬТАТ -->
   <div id="result" class="modal" hidden>
     <div class="modal-card result-card">
       <div id="result-emoji" class="result-emoji"></div>
@@ -247,17 +444,30 @@
       <p id="result-info" class="muted"></p>
       <div id="result-extra" class="extra"></div>
       <div class="row">
-        <button id="again-btn" class="btn">Крутить ещё</button>
-        <button id="accept-btn" class="btn primary">Принять</button>
+        <button id="again-btn" class="duo-btn">Крутить ещё</button>
+        <button id="accept-btn" class="duo-btn green">Принять</button>
       </div>
-      <button id="share-btn" class="link">Поделиться</button>
+      <button id="share-btn" class="link">
+        <span data-icon="share" data-icon-size="18"></span> Поделиться картинкой
+      </button>
     </div>
   </div>
 
-  <!-- ОБЩАЯ МОДАЛКА -->
+  <!-- МИНИ-ИГРА -->
+  <div id="guess-modal" class="modal" hidden>
+    <div class="modal-card guess-card">
+      <div class="guess-emoji" id="guess-emoji" data-icon="cocktail" data-icon-size="48"></div>
+      <h3 id="guess-name">Напиток</h3>
+      <p class="muted">Угадай крепость — получишь +2 реролла!</p>
+      <div class="guess-options" id="guess-options"></div>
+      <button id="guess-close" class="link">Пропустить</button>
+    </div>
+  </div>
+
+  <!-- МОДАЛКА -->
   <div id="modal" class="modal" hidden>
     <div class="modal-card">
-      <button id="modal-close" class="icon-btn close" aria-label="Закрыть">✕</button>
+      <button id="modal-close" class="duo-icon-btn close" aria-label="Закрыть" data-icon="close" data-icon-size="18"></button>
       <div id="modal-body"></div>
     </div>
   </div>
@@ -265,23 +475,29 @@
   <!-- НАСТРОЙКИ -->
   <div id="settings" class="modal" hidden>
     <div class="modal-card">
-      <button id="settings-close" class="icon-btn close" aria-label="Закрыть">✕</button>
+      <button id="settings-close" class="duo-icon-btn close" aria-label="Закрыть" data-icon="close" data-icon-size="18"></button>
       <h3>Настройки</h3>
-      <button id="settings-change-mode" class="btn full">🎛 Сменить режим питья</button>
-      <label class="switch-row"><span>Звук тиканья</span><input type="checkbox" id="set-tick" class="switch"></label>
-      <label class="switch-row"><span>Звук результата</span><input type="checkbox" id="set-result-sound" class="switch"></label>
-      <label class="switch-row"><span>Вибрация</span><input type="checkbox" id="set-vibrate" class="switch"></label>
-      <label class="switch-row"><span>Только лёгкое (≤6%)</span><input type="checkbox" id="set-only-light" class="switch"></label>
-      <label class="field">Макс. крепость: <input type="range" id="set-max-abv" min="0" max="60" step="1"><span id="set-max-abv-val"></span></label>
-      <label class="field">Напомнить про воду после: <input type="number" id="set-water" min="0" max="20" step="1"></label>
-      <button id="reset-data" class="btn danger full">Сбросить все данные</button>
-      <p class="muted small center">Версия 8.0 · 18+ · Пейте ответственно</p>
+      <button id="settings-change-mode" class="duo-btn full">
+        <span data-icon="filters" data-icon-size="18"></span> Сменить режим
+      </button>
+      <label class="duo-switch-row"><span>Звук тиканья</span><input type="checkbox" id="set-tick" class="duo-switch"></label>
+      <label class="duo-switch-row"><span>Звук результата</span><input type="checkbox" id="set-result-sound" class="duo-switch"></label>
+      <label class="duo-switch-row"><span>Вибрация</span><input type="checkbox" id="set-vibrate" class="duo-switch"></label>
+      <label class="duo-switch-row"><span>Только лёгкое (≤6%)</span><input type="checkbox" id="set-only-light" class="duo-switch"></label>
+      <label class="duo-switch-row"><span>Ambient (фон бара)</span><input type="checkbox" id="set-ambient" class="duo-switch"></label>
+      <label class="duo-switch-row"><span>Параллакс от наклона</span><input type="checkbox" id="set-tilt" class="duo-switch"></label>
+      <label class="duo-field">Макс. крепость: <input type="range" id="set-max-abv" min="0" max="60" step="1"><span id="set-max-abv-val"></span></label>
+      <label class="duo-field">Вода после: <input type="number" id="set-water" min="0" max="20" step="1"></label>
+      <button id="reset-data" class="duo-btn red full">Сбросить все данные</button>
+      <p class="muted small center">Версия 11.0 «Duo» · 18+ · Пейте ответственно</p>
     </div>
   </div>
 
   <div id="toast" class="toast" hidden></div>
   <div id="confetti" class="confetti" hidden></div>
 </main>
+
+<script src="icons.js"></script>
 <script src="drinks.js"></script>
 <script src="app.js"></script>
 </body>
