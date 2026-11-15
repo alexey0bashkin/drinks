@@ -1405,11 +1405,21 @@ const MUG = {
   reduced: false,
   initialized: false,
   pupils: null,
+
+  // ==== КЭШИ (добавлено) ====
+  shadowEl: null,      // .mug-shadow — кэш querySelector
+  _lastT: 0,           // для dt-нормализации
+  _lastPx: null,       // последний transform зрачков (троттлинг)
+  _lastPy: null,
+  _lastBurst: 0,       // время последнего burst частиц
+  _shadowLastScale: -1,// последний scale тени
+  _shadowLastOpacity: -1,
 };
 
 function mugInit(){
   MUG.el = document.getElementById('flying-mug');
   if(!MUG.el) return;
+
   MUG.reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   MUG.size = 80;
   MUG.bounds.w = window.innerWidth;
@@ -1419,6 +1429,9 @@ function mugInit(){
   MUG.targetX = MUG.x;
   MUG.targetY = MUG.y;
   MUG.pupils = MUG.el.querySelectorAll('.mug-pupil');
+
+  // ==== КЭШ ТЕНИ (было querySelector каждый кадр) ====
+  MUG.shadowEl = MUG.el.querySelector('.mug-shadow');
 
   MUG.el.classList.add('mug-hello');
   setTimeout(() => MUG.el.classList.remove('mug-hello'), 1500);
@@ -1437,6 +1450,7 @@ function mugInit(){
 
   MUG.lastInteraction = performance.now();
   MUG.lastPointerMove = performance.now();
+  MUG._lastT = performance.now();
   MUG.initialized = true;
   requestAnimationFrame(mugTick);
 }
@@ -1562,51 +1576,85 @@ function clampTarget(x, y, minX, maxX, minY, maxY){
 
 function mugTick(t){
   if(!MUG.initialized) return;
+
+  // ==== dt-нормализация к 60fps (было: фикс. шаг на кадр) ====
+  const dtRaw = t - MUG._lastT;
+  MUG._lastT = t;
+  const dt = Math.min(32, dtRaw) / 16.667; // 1.0 при 60fps, 0.5 при 120fps, 2.0 при 30fps
+
+  // ==== target ====
   const target = mugComputeTarget(t);
   MUG.targetX = target.x;
   MUG.targetY = target.y;
 
+  // ==== физика (масштабируем через dt) ====
   const stiffness = MUG.state === 'excited' ? 0.14 : MUG.state === 'sleepy' ? 0.03 : 0.07;
-  const damping = MUG.state === 'excited' ? 0.80 : MUG.state === 'sleepy' ? 0.92 : 0.86;
+  const damping   = MUG.state === 'excited' ? 0.80 : MUG.state === 'sleepy' ? 0.92 : 0.86;
 
   const ax = (MUG.targetX - MUG.x) * stiffness;
   const ay = (MUG.targetY - MUG.y) * stiffness;
-  MUG.vx = (MUG.vx + ax) * damping;
-  MUG.vy = (MUG.vy + ay) * damping;
-  MUG.x += MUG.vx;
-  MUG.y += MUG.vy;
 
+  MUG.vx = (MUG.vx + ax) * Math.pow(damping, dt);
+  MUG.vy = (MUG.vy + ay) * Math.pow(damping, dt);
+  MUG.x += MUG.vx * dt;
+  MUG.y += MUG.vy * dt;
+
+  // ==== поворот ====
   const targetRot = Math.max(-25, Math.min(25, MUG.vx * 1.2 + MUG.vy * 0.4));
-  MUG.rotV = (MUG.rotV + (targetRot - MUG.rot) * 0.1) * 0.85;
-  MUG.rot += MUG.rotV;
+  MUG.rotV = (MUG.rotV + (targetRot - MUG.rot) * 0.1) * Math.pow(0.85, dt);
+  MUG.rot += MUG.rotV * dt;
 
-  const speed = Math.hypot(MUG.vx, MUG.vy);
+  // ==== скорость (без Math.hypot — он медленнее) ====
+  const speed = Math.sqrt(MUG.vx * MUG.vx + MUG.vy * MUG.vy);
+
+  // ==== тень: обновляем ТОЛЬКО если реально изменилось ====
   const shadowScale = 1 + Math.min(0.3, speed * 0.01);
-  const shadow = MUG.el.querySelector('.mug-shadow');
-  if(shadow){
-    shadow.style.transform = `scale(${shadowScale})`;
-    shadow.style.opacity = String(0.3 - Math.min(0.2, speed * 0.005));
+  const shadowOpacity = 0.3 - Math.min(0.2, speed * 0.005);
+  if(MUG.shadowEl &&
+     (Math.abs(shadowScale - MUG._shadowLastScale) > 0.01 ||
+      Math.abs(shadowOpacity - MUG._shadowLastOpacity) > 0.01)){
+    MUG._shadowLastScale = shadowScale;
+    MUG._shadowLastOpacity = shadowOpacity;
+    MUG.shadowEl.style.transform = `scale(${shadowScale.toFixed(3)})`;
+    MUG.shadowEl.style.opacity = shadowOpacity.toFixed(3);
   }
 
+  // ==== «дыхание» только в excited, иначе 1 ====
   const breathe = MUG.state === 'excited'
     ? 1 + Math.sin(t * 0.02) * 0.05
     : 1;
 
-  MUG.el.style.transform = `translate3d(${MUG.x - MUG.size / 2}px, ${MUG.y - MUG.size / 2}px, 0) rotate(${MUG.rot}deg) scale(${breathe})`;
+  // ==== главный transform ====
+  MUG.el.style.transform =
+    `translate3d(${MUG.x - MUG.size / 2}px, ${MUG.y - MUG.size / 2}px, 0) ` +
+    `rotate(${MUG.rot.toFixed(2)}deg) scale(${breathe.toFixed(3)})`;
 
+  // ==== зрачки: троттлинг (обновляем только при сдвиге > 0.3px) ====
   if(MUG.pupils && MUG.pupils.length){
     const dx = MUG.pointerX - MUG.x;
     const dy = MUG.pointerY - MUG.y;
-    const dist = Math.hypot(dx, dy) || 1;
+    const dist = Math.sqrt(dx * dx + dy * dy) || 1;
     const maxOffset = 1.8;
     const px = (dx / dist) * Math.min(maxOffset, dist * 0.02);
     const py = (dy / dist) * Math.min(maxOffset, dist * 0.02);
-    MUG.pupils.forEach(p => {
-      p.style.transform = `translate(${px}px, ${py}px)`;
-    });
+
+    // округляем до 0.1, чтобы не дёргать DOM лишний раз
+    const pxR = Math.round(px * 10) / 10;
+    const pyR = Math.round(py * 10) / 10;
+    if(pxR !== MUG._lastPx || pyR !== MUG._lastPy){
+      MUG._lastPx = pxR;
+      MUG._lastPy = pyR;
+      const tf = `translate(${pxR}px, ${pyR}px)`;
+      for(let i = 0; i < MUG.pupils.length; i++){
+        MUG.pupils[i].style.transform = tf;
+      }
+    }
   }
 
-  if((MUG.state === 'excited' || MUG.state === 'celebrate') && Math.random() < 0.15){
+  // ==== частицы: троттлинг до ~5 раз/сек (было ~9 в сек) ====
+  if((MUG.state === 'excited' || MUG.state === 'celebrate') &&
+     t - MUG._lastBurst > 200){
+    MUG._lastBurst = t;
     mugBurstParticles(1);
   }
 
@@ -1617,13 +1665,19 @@ function mugBurstParticles(count){
   if(!MUG.el || MUG.reduced) return;
   const trail = document.getElementById('mug-trail');
   if(!trail) return;
-  for(let i = 0; i < count; i++){
+
+  // ==== лимит: не более 12 живых частиц одновременно ====
+  const alive = trail.children.length;
+  if(alive >= 12) return;
+  const room = Math.min(count, 12 - alive);
+
+  for(let i = 0; i < room; i++){
     const p = document.createElement('div');
     p.className = 'mug-particle';
     const angle = Math.random() * Math.PI * 2;
     const dist = 10 + Math.random() * 25;
     p.style.left = (40 + Math.cos(angle) * dist) + 'px';
-    p.style.top = (40 + Math.sin(angle) * dist) + 'px';
+    p.style.top  = (40 + Math.sin(angle) * dist) + 'px';
     p.style.animationDelay = (Math.random() * 0.2) + 's';
     trail.appendChild(p);
     setTimeout(() => p.remove(), 1300);
@@ -1672,8 +1726,10 @@ function mugSound(kind){
 (function initBubbles(){
   const canvas = document.getElementById('bubble-canvas');
   if(!canvas) return;
-  const ctx = canvas.getContext('2d');
+  const ctx = canvas.getContext('2d', { alpha: true });
   let W = 0, H = 0, dpr = Math.min(window.devicePixelRatio || 1, 2);
+  let bubbleRAF = 0;
+  let paused = false;
 
   function resize(){
     W = window.innerWidth;
@@ -1685,7 +1741,7 @@ function mugSound(kind){
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   }
   resize();
-  window.addEventListener('resize', resize);
+  window.addEventListener('resize', resize, { passive: true });
 
   const N = window.innerWidth < 500 ? 18 : 32;
   const bubbles = [];
@@ -1702,26 +1758,46 @@ function mugSound(kind){
     });
   }
 
+  // ==== КЭШ: один градиент-«блик» на все пузырьки нельзя (разные x,y),
+  // но можно убрать createRadialGradient из кадра.
+  // Рисуем: заливка rgba + маленький белый блик (2 arc вместо градиента). ====
   function draw(t){
+    if(paused) return;
     ctx.clearRect(0, 0, W, H);
-    for(const b of bubbles){
+    for(let i = 0; i < bubbles.length; i++){
+      const b = bubbles[i];
       b.y -= b.speed;
       b.x += b.drift + Math.sin(t * .001 + b.phase) * .3;
       if(b.y < -10){ b.y = H + 10; b.x = Math.random() * W; }
       if(b.x < -10) b.x = W + 10;
       if(b.x > W + 10) b.x = -10;
-      const grad = ctx.createRadialGradient(b.x, b.y, 0, b.x, b.y, b.r);
-      grad.addColorStop(0, `hsla(${b.hue},100%,70%,${b.alpha})`);
-      grad.addColorStop(.6, `hsla(${b.hue},100%,55%,${b.alpha * .5})`);
-      grad.addColorStop(1, `hsla(${b.hue},100%,45%,0)`);
-      ctx.fillStyle = grad;
-      ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2); ctx.fill();
-      ctx.fillStyle = `hsla(0,0%,100%,${b.alpha * .8})`;
-      ctx.beginPath(); ctx.arc(b.x - b.r * .3, b.y - b.r * .3, b.r * .25, 0, Math.PI * 2); ctx.fill();
+
+      // основной круг — без градиента
+      ctx.fillStyle = `hsla(${b.hue},100%,60%,${b.alpha})`;
+      ctx.beginPath();
+      ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+      ctx.fill();
+
+      // блик
+      ctx.fillStyle = `hsla(0,0%,100%,${b.alpha * 0.8})`;
+      ctx.beginPath();
+      ctx.arc(b.x - b.r * .3, b.y - b.r * .3, b.r * .25, 0, Math.PI * 2);
+      ctx.fill();
     }
-    requestAnimationFrame(draw);
+    bubbleRAF = requestAnimationFrame(draw);
   }
-  requestAnimationFrame(draw);
+  bubbleRAF = requestAnimationFrame(draw);
+
+  // ==== пауза на скрытой вкладке ====
+  document.addEventListener('visibilitychange', () => {
+    if(document.hidden){
+      paused = true;
+      cancelAnimationFrame(bubbleRAF);
+    } else {
+      paused = false;
+      bubbleRAF = requestAnimationFrame(draw);
+    }
+  });
 })();
 
 // ============================================================
